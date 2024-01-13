@@ -1,9 +1,9 @@
 import pygame
+from pygame import gfxdraw
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from math import sin, cos
-import sys
 
 # Initialize Pygame
 pygame.init()
@@ -71,34 +71,73 @@ def draw_grid():
         glVertex2f(width, i * height / 3)
         glEnd()
 
-def draw_X(x, y):
-    glBegin(GL_LINES)
-    glColor3f(1.0, 1.0, 1.0)
-    glVertex2f(x + 50, y + 50)
-    glVertex2f(x + 150, y + 150)
+def draw_dda_line(x1, y1, x2, y2):
+    dx = x2 - x1
+    dy = y2 - y1
+    steps = max(abs(dx), abs(dy))
+
+    x_increment = dx / steps
+    y_increment = dy / steps
+
+    x, y = x1, y1
+    glBegin(GL_POINTS)
+    for _ in range(int(steps) + 1):
+        glVertex2f(x, y)
+        x += x_increment
+        y += y_increment
     glEnd()
 
-    glBegin(GL_LINES)
-    glVertex2f(x + 150, y + 50)
-    glVertex2f(x + 50, y + 150)
-    glEnd()
+def draw_shape(x, y, shape_type):
+    if shape_type == 'X':
+        x1, y1 = x + 50, y + 50
+        x2, y2 = x + 150, y + 150
+        draw_dda_line(x1, y1, x2, y2)
 
-def draw_O(x, y):
-    radius = min(width, height) // 10  
-    glBegin(GL_LINE_LOOP)
-    glColor3f(1.0, 1.0, 1.0)
-    for i in range(100):
-        angle = 2.0 * 3.1415926 * i / 100
-        glVertex2f(x + width / 6 + radius * cos(angle), y + height / 6 + radius * sin(angle))
+        x1, y1 = x + 150, y + 50
+        x2, y2 = x + 50, y + 150
+        draw_dda_line(x1, y1, x2, y2)
+
+    elif shape_type == 'O':
+        draw_midpoint_circle(x + width / 6, y + height / 6, min(width, height) // 10)
+
+
+def draw_midpoint_circle(x_center, y_center, radius):
+    x = radius
+    y = 0
+    p = 1 - radius
+
+    while x >= y:
+        draw_circle_points(x_center, y_center, x, y)
+        y += 1
+        if p <= 0:
+            p = p + 2 * y + 1
+        else:
+            x -= 1
+            p = p + 2 * y - 2 * x + 1
+        if x < y:
+            break
+        draw_circle_points(x_center, y_center, x, y)
+
+
+def draw_circle_points(x_center, y_center, x, y):
+    glBegin(GL_POINTS)
+    glVertex2f(x_center + x, y_center - y)
+    glVertex2f(x_center + y, y_center - x)
+    glVertex2f(x_center - y, y_center - x)
+    glVertex2f(x_center - x, y_center - y)
+    glVertex2f(x_center - x, y_center + y)
+    glVertex2f(x_center - y, y_center + x)
+    glVertex2f(x_center + y, y_center + x)
+    glVertex2f(x_center + x, y_center + y)
     glEnd()
 
 def draw_board(grid):
     for row in range(3):
         for col in range(3):
             if grid[row][col] == 'X':
-                draw_X(col * width / 3, row * height / 3)
+                draw_shape(col * width / 3, row * height / 3,'X')
             elif grid[row][col] == 'O':
-                draw_O(col * width / 3, row * height / 3)
+                draw_shape(col * width / 3, row * height / 3,'O')
 
 def check_winner(grid):
     for i in range(3):
@@ -151,10 +190,8 @@ def main_game_loop():
         draw_board(grid)
         winner = check_winner(grid)
         if winner:
-            print(f"Player {winner} wins!")
             game_over = True
         elif is_board_full(grid):
-            print("It's a draw!")
             game_over = True
 
         pygame.display.flip()
@@ -180,8 +217,6 @@ def view_result():
         # Draw the grid and board
         draw_grid()
         draw_board(grid)
-        # pygame.quit()
-        # quit()
     
         # Update the display
         pygame.display.flip()
@@ -199,7 +234,10 @@ def show_result(winner):
         result_button = pygame.Rect(width // 4, height // 2, width // 2, height // 8)
         new_game_button = pygame.Rect(width // 4, 2 * height // 3, width // 2, height // 8)
 
-        draw_message(f"Player {winner} wins!", result_button, new_game_button)
+        if winner!=None:
+            draw_message(f"Player {winner} wins!", result_button, new_game_button)
+        else:
+            draw_message(f"It's a Draw!", result_button, new_game_button)
 
         while not called:
             for event in pygame.event.get():
@@ -241,7 +279,7 @@ def main():
 
     game_grid = main_game_loop()
     winner = check_winner(game_grid)
-
+    print(winner)
     if winner:
         show_result(winner)
 
