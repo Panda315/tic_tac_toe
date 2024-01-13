@@ -3,12 +3,16 @@ from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from math import sin, cos
+import sys
 
 # Initialize Pygame
 pygame.init()
 
 # Set the window dimensions
 width, height = 600, 600
+
+# to control the loop in show_result
+called = False
 
 # Initialize the Pygame window
 screen = pygame.display.set_mode((width, height), DOUBLEBUF | OPENGL)
@@ -23,8 +27,11 @@ red = (255, 0, 0)
 # Font
 font = pygame.font.Font(None, 36)
 
+grid = [['', '', ''],
+        ['', '', ''],
+        ['', '', '']]
+
 def draw_message(message, result_button, new_game_button):
-    print("draw_message function")
     print(message)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     screen = pygame.display.set_mode((width, height))
@@ -51,10 +58,8 @@ def draw_message(message, result_button, new_game_button):
     pygame.display.flip()
     pygame.time.wait(2000)
 
-def init_opengl():
-    glOrtho(0, width, 0, height, -1, 1)
-
 def draw_grid():
+    glColor3f(1.0, 1.0, 1.0)
     for i in range(1, 3):
         glBegin(GL_LINES)
         glVertex2f(i * width / 3, 0)
@@ -68,6 +73,7 @@ def draw_grid():
 
 def draw_X(x, y):
     glBegin(GL_LINES)
+    glColor3f(1.0, 1.0, 1.0)
     glVertex2f(x + 50, y + 50)
     glVertex2f(x + 150, y + 150)
     glEnd()
@@ -79,8 +85,8 @@ def draw_X(x, y):
 
 def draw_O(x, y):
     radius = min(width, height) // 10  
-
     glBegin(GL_LINE_LOOP)
+    glColor3f(1.0, 1.0, 1.0)
     for i in range(100):
         angle = 2.0 * 3.1415926 * i / 100
         glVertex2f(x + width / 6 + radius * cos(angle), y + height / 6 + radius * sin(angle))
@@ -116,15 +122,12 @@ def is_board_full(grid):
     return True
 
 def main_game_loop():
-    global width, height
-
-    init_opengl()
-
-    grid = [['', '', ''],
-            ['', '', ''],
-            ['', '', '']]
+    global width, height,grid_needed
+    # Set the OpenGL orthographic projection
+    glOrtho(0, width, 0, height, -1, 1)
 
     current_player = 'X'
+
     game_over = False
 
     while not game_over:
@@ -143,9 +146,9 @@ def main_game_loop():
                     current_player = 'O' if current_player == 'X' else 'X'
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glColor3f(1.0, 1.0, 1.0)
         draw_grid()
         draw_board(grid)
-
         winner = check_winner(grid)
         if winner:
             print(f"Player {winner} wins!")
@@ -159,48 +162,33 @@ def main_game_loop():
 
     return grid
 
-# def show_result(winner):
-#     print("show_result function")
-#     global width, height
+def view_result():
+    # Create a new Pygame surface for the OpenGL context
+    pygame.display.set_mode((width, height), DOUBLEBUF | OPENGL)
+        
+    # Set the OpenGL orthographic projection
+    glOrtho(0, width, 0, height, -1, 1)
+    while True:
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                quit()
+        
+        # Clear the OpenGL buffers
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-#     init_opengl()
-
-#     called = False  # Flag to control whether draw_message should be called
-
-#     while not called:
-#         for event in pygame.event.get():
-#             if event.type == QUIT:
-#                 pygame.quit()
-#                 quit()
-
-#             if not called:
-#                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
-#                 result_button = pygame.Rect(width // 4, height // 2, width // 2, height // 8)
-#                 new_game_button = pygame.Rect(width // 4, 2 * height // 3, width // 2, height // 8)
-
-#                 for event in pygame.event.get():
-#                     if event.type == QUIT:
-#                         called = True
-#                     elif event.type == MOUSEBUTTONDOWN and event.button == 1:
-#                         x, y = event.pos
-#                         if result_button.collidepoint(x, y):
-#                             print("View Result button clicked!")
-#                             # Add your code to handle the "View Result" button click
-#                         elif new_game_button.collidepoint(x, y):
-#                             print("New Game button clicked!")
-#                             # Add your code to handle the "New Game" button click
-
-#                 draw_message(f"Player {winner} wins!", result_button, new_game_button)
-
-#         pygame.display.flip()
-#         pygame.time.wait(10)
+        # Draw the grid and board
+        draw_grid()
+        draw_board(grid)
+        # pygame.quit()
+        # quit()
+    
+        # Update the display
+        pygame.display.flip()
+        pygame.time.wait(10)
 
 def show_result(winner):
-    print("show _result function")
-    global width, height
-
-    init_opengl()
+    global width, height,screen,called
 
     while True:
         for event in pygame.event.get():
@@ -208,12 +196,11 @@ def show_result(winner):
                 pygame.quit()
                 quit()
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
         result_button = pygame.Rect(width // 4, height // 2, width // 2, height // 8)
         new_game_button = pygame.Rect(width // 4, 2 * height // 3, width // 2, height // 8)
 
-        called = False
+        draw_message(f"Player {winner} wins!", result_button, new_game_button)
+
         while not called:
             for event in pygame.event.get():
                 if event.type == QUIT:
@@ -223,14 +210,31 @@ def show_result(winner):
 
                 elif event.type == MOUSEBUTTONDOWN and event.button == 1:
                     x, y = event.pos
-                    if result_button.collidepoint(x, y):
-                        print("View Result button clicked!")
-                        # Add your code to handle the "View Result" button click
-                    elif new_game_button.collidepoint(x, y):
-                        print("New Game button clicked!")
-                        # Add your code to handle the "New Game" button click
 
-            draw_message(f"Player {winner} wins!", result_button, new_game_button)
+                    if result_button.collidepoint(x, y):
+                        view_result()
+                        called = True
+                        break
+
+                    elif new_game_button.collidepoint(x, y):
+                        reset_grid()
+                        break
+            
+
+def reset_grid():
+    global width, height, screen, grid
+
+    # Set the window dimensions
+    width, height = 600, 600
+
+    # Reset other global variables
+    screen = pygame.display.set_mode((width, height), DOUBLEBUF | OPENGL)
+    grid = [['', '', ''],
+            ['', '', ''],
+            ['', '', '']]
+
+    main()
+
 
 def main():
     global width, height
