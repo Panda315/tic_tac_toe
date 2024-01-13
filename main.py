@@ -46,7 +46,7 @@ def draw_X(x, y):
     glEnd()
 
 def draw_O(x, y):
-    radius = min(width, height) // 10  # Adjust the radius to fit within the cell
+    radius = min(width, height) // 10  
 
     glBegin(GL_LINE_LOOP)
     for i in range(100):
@@ -98,7 +98,6 @@ def main():
 
             elif event.type == MOUSEBUTTONDOWN and event.button == 1:
                 x, y = event.pos
-                print(x,y)
                 col = int(x // (width / 3))
                 row = 2 - int(y // (height / 3))
 
