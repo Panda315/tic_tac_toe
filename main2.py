@@ -223,8 +223,7 @@ def view_result():
         pygame.time.wait(10)
 
 def show_result(winner):
-    global width, height,screen,called
-
+    global width, height, screen, called
     while True:
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -234,10 +233,12 @@ def show_result(winner):
         result_button = pygame.Rect(width // 4, height // 2, width // 2, height // 8)
         new_game_button = pygame.Rect(width // 4, 2 * height // 3, width // 2, height // 8)
 
-        if winner!=None:
+        # draw_message("It's a Draw!", result_button, new_game_button)
+        if winner is not None:
             draw_message(f"Player {winner} wins!", result_button, new_game_button)
+
         else:
-            draw_message(f"It's a Draw!", result_button, new_game_button)
+            draw_message("It's a Draw!", result_button, new_game_button)
 
         while not called:
             for event in pygame.event.get():
@@ -279,8 +280,7 @@ def main():
 
     game_grid = main_game_loop()
     winner = check_winner(game_grid)
-    print(winner)
-    if winner:
+    if winner or is_board_full:
         show_result(winner)
 
     pygame.quit()
